@@ -8,13 +8,16 @@
 
 using namespace std;
 
-float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &expected) {
-    for (int i = 0; i < layers.size(); i++) {
-        if (i == 0)
-            activate(layers[i], data);
-        else
-            activate(layers[i], layers[i - 1]->out);
+void forward(vector<layer_t *> &layers, tensor_t<float> &data) {
+    activate(layers[0], data);
+    for (int i = 1; i < layers.size(); i++) {
+        activate(layers[i], layers[i - 1]->out);
     }
+}
+
+
+float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &expected) {
+    forward(layers, data);
 
     tensor_t<float> grads = layers.back()->out - expected;
 
@@ -36,16 +39,6 @@ float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &e
             err += abs(grads.data[i]);
     }
     return err * 100;
-}
-
-
-void forward(vector<layer_t *> &layers, tensor_t<float> &data) {
-    for (int i = 0; i < layers.size(); i++) {
-        if (i == 0)
-            activate(layers[i], data);
-        else
-            activate(layers[i], layers[i - 1]->out);
-    }
 }
 
 struct case_t {
@@ -150,6 +143,8 @@ int main() {
 
 
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
     while (true) {
         uint8_t *data = read_file("test.ppm");
 
@@ -192,5 +187,6 @@ int main() {
         wait.tv_nsec = 0;
         nanosleep(&wait, nullptr);
     }
+#pragma clang diagnostic pop
     return 0;
 }

@@ -10,13 +10,17 @@
 
 using namespace std;
 
-float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &expected) {
-    for (int i = 0; i < layers.size(); i++) {
-        if (i == 0)
-            activate(layers[i], data);
-        else
-            activate(layers[i], layers[i - 1]->out);
+
+void forward(vector<layer_t *> &layers, tensor_t<float> &data) {
+    activate(layers[0], data);
+    for (int i = 1; i < layers.size(); i++) {
+        activate(layers[i], layers[i - 1]->out);
     }
+}
+
+
+float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &expected) {
+    forward(layers, data);
 
     tensor_t<float> grads = layers.back()->out - expected;
 
@@ -40,15 +44,6 @@ float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &e
     return err * 100;
 }
 
-
-void forward(vector<layer_t *> &layers, tensor_t<float> &data) {
-    for (int i = 0; i < layers.size(); i++) {
-        if (i == 0)
-            activate(layers[i], data);
-        else
-            activate(layers[i], layers[i - 1]->out);
-    }
-}
 
 struct case_t {
     tensor_t<float> data;
@@ -75,6 +70,8 @@ vector<case_t> read_test_cases() {
     uint8_t *train_labels = read_file("train-labels.idx1-ubyte");
 
     uint32_t case_count = byteswap_uint32(*(uint32_t *) (train_image + 4));
+
+    cout << case_count << endl;
 
     for (int i = 0; i < case_count; i++) {
         case_t c{tensor_t<float>(28, 28, 1), tensor_t<float>(10, 1, 1)};
