@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <algorithm>
+#include <time.h>
 #include "byteswap.h"
 #include "CNN/cnn.h"
 
@@ -153,6 +154,8 @@ int main()
 
 
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 	while ( true )
 	{
 		uint8_t * data = read_file( "test.ppm" );
@@ -201,5 +204,6 @@ int main()
 		wait.tv_nsec = 0;
 		nanosleep(&wait, nullptr);
 	}
+#pragma clang diagnostic pop
 	return 0;
 }

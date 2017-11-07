@@ -1,3 +1,4 @@
+#pragma once
 #include <cstdint>
 
 uint32_t byteswap_uint32(uint32_t a)
