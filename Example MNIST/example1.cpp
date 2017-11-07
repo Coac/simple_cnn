@@ -94,6 +94,40 @@ vector<case_t> read_test_cases() {
     return cases;
 }
 
+
+float compute_accuracy(vector<layer_t *> &layers, vector<case_t> &cases) {
+
+    float correct_count = 0;
+
+    for (case_t &c : cases) {
+
+        float expected = 0;
+        for (int i = 0; i < c.out.size.x; i++) {
+            if (c.out(i, 0, 0) == 1) {
+                expected = i;
+            }
+        }
+
+
+        forward(layers, c.data);
+        auto probs = layers.back()->out;
+        float predicted = -1;
+        float max_prob = -1;
+        for (int i = 0; i < probs.size.x; i++) {
+            if (probs(i, 0, 0) > max_prob) {
+                max_prob = probs(i, 0, 0);
+                predicted = i;
+            }
+        }
+
+        if (predicted == expected) {
+            correct_count++;
+        }
+    }
+
+    return correct_count / cases.size();
+}
+
 int main() {
     vector<case_t> cases = read_test_cases();
 
@@ -117,13 +151,18 @@ int main() {
 
         for (case_t &t : cases) {
             float xerr = train(layers, t.data, t.out);
+
             amse += xerr;
 
             ep++;
             ic++;
 
-            if (ep % 1000 == 0)
+            if (ep % 1000 == 0) {
                 cout << "case " << ep << " err=" << amse / ic << endl;
+
+                vector<case_t> last_cases(cases.begin() + 59000, cases.end());
+                cout << "accuracy:" << compute_accuracy(layers, last_cases) << endl;
+            }
 
             // if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
             // {
