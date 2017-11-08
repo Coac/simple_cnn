@@ -155,6 +155,27 @@ float compute_accuracy(vector<layer_t *> &layers, vector<tensor_t<float>> &x, ve
     return correct_count / x.size();
 }
 
+float compute_mae_loss(vector<layer_t *> &layers, vector<tensor_t<float>> &x, vector<tensor_t<float>> &y) {
+    float sum = 0;
+
+    for (int i = 0; i < x.size(); ++i) {
+
+        auto xi = x[i];
+        auto yi = y[i];
+
+        forward(layers, xi);
+        auto predicted_yi = layers.back()->out;
+
+        auto diff = yi - predicted_yi;
+
+        for (int i = 0; i < diff.size.x; i++) {
+            sum += abs(diff(i, 0, 0));
+        }
+    }
+
+    return sum / x.size();
+}
+
 int main() {
     auto train_x = load_csv_data("mnist_training_features.csv", 28, 28, 1);
     auto train_y = load_csv_data("mnist_training_labels.csv", 10, 1, 1);
@@ -191,9 +212,10 @@ int main() {
             ep++;
             ic++;
 
-            if (ep % 1000 == 0) {
+            if (ep % 10000 == 0) {
                 cout << "case " << ep << " err=" << amse / ic << endl;
                 cout << "accuracy:" << compute_accuracy(layers, val_x, val_y) << endl;
+                cout << "mae:" << compute_mae_loss(layers, val_x, val_y) << endl;
             }
         }
     }
