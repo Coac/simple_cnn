@@ -5,6 +5,7 @@
 #include <fstream>
 #include <algorithm>
 #include <time.h>
+#include <sstream>
 #include "byteswap.h"
 #include "CNN/cnn.h"
 
@@ -61,6 +62,60 @@ uint8_t *read_file(const char *szFile) {
     uint8_t *buffer = new uint8_t[size];
     file.read((char *) buffer, size);
     return buffer;
+}
+
+vector<vector<float>> load_csv(const char *csv_path) {
+    vector<vector<float>> values;
+    vector<float> valueline;
+    ifstream fin(csv_path);
+    if (fin.fail()) {
+        cout << csv_path << " not found !" << endl;
+        exit(1);
+    }
+    string item;
+    for (string line; getline(fin, line);) {
+        istringstream in(line);
+
+        while (getline(in, item, ',')) {
+            valueline.push_back(atof(item.c_str()));
+        }
+
+        values.push_back(valueline);
+        valueline.clear();
+    }
+
+    cout << "Shape: (" << values.size() << "," << values[0].size() << ")" << endl;
+
+    return values;
+}
+
+
+vector<tensor_t<float>> csv_to_tensor(vector<vector<float>> &csv_y) {
+    vector<tensor_t<float>> tensors_y;
+
+    for (auto &yi : csv_y) {
+        tensor_t<float> tensor_y(yi.size(), 1, 1);
+
+        int i = 0;
+        for (auto &yi_col : yi) {
+            tensor_y(i, 0, 0) = yi_col;
+            i++;
+        }
+
+        tensors_y.push_back(tensor_y);
+    }
+
+    return tensors_y;
+}
+
+void read_test_cases_csv() {
+    auto csv_x = load_csv("mnist_validation_features.csv");
+    auto csv_y = load_csv("mnist_validation_labels.csv");
+
+    auto y = csv_to_tensor(csv_y);
+    print_tensor(y[0]);
+
+
 }
 
 vector<case_t> read_test_cases() {
@@ -129,6 +184,7 @@ float compute_accuracy(vector<layer_t *> &layers, vector<case_t> &cases) {
 }
 
 int main() {
+    read_test_cases_csv();
     vector<case_t> cases = read_test_cases();
 
     vector<layer_t *> layers;
