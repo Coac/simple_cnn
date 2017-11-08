@@ -90,16 +90,29 @@ vector<vector<float>> load_csv(const char *csv_path) {
 }
 
 
-vector<tensor_t<float>> csv_to_tensor(vector<vector<float>> &csv_y) {
+// TODO :
+vector<tensor_t<float>>
+csv_to_tensor(vector<vector<float>> &csv_y, const int size_x, const int size_y, const int size_z) {
     vector<tensor_t<float>> tensors_y;
 
     for (auto &yi : csv_y) {
-        tensor_t<float> tensor_y(yi.size(), 1, 1);
+        tensor_t<float> tensor_y(size_x, size_y, size_z);
 
         int i = 0;
+        int j = 0;
+        int k = 0;
         for (auto &yi_col : yi) {
-            tensor_y(i, 0, 0) = yi_col;
+            tensor_y(i, j, k) = yi_col;
             i++;
+            if (i % size_x == 0) {
+                i = 0;
+                j++;
+
+                if (j % size_y == 0) {
+                    j = 0;
+                    k++;
+                }
+            }
         }
 
         tensors_y.push_back(tensor_y);
@@ -108,14 +121,9 @@ vector<tensor_t<float>> csv_to_tensor(vector<vector<float>> &csv_y) {
     return tensors_y;
 }
 
-void read_test_cases_csv() {
-    auto csv_x = load_csv("mnist_validation_features.csv");
-    auto csv_y = load_csv("mnist_validation_labels.csv");
-
-    auto y = csv_to_tensor(csv_y);
-    print_tensor(y[0]);
-
-
+vector<tensor_t<float>> load_csv_data(const char *csv_path, const int size_x, const int size_y, const int size_z) {
+    auto csv_x = load_csv(csv_path);
+    return csv_to_tensor(csv_x, size_x, size_y, size_z);
 }
 
 vector<case_t> read_test_cases() {
@@ -150,21 +158,24 @@ vector<case_t> read_test_cases() {
 }
 
 
-float compute_accuracy(vector<layer_t *> &layers, vector<case_t> &cases) {
+float compute_accuracy(vector<layer_t *> &layers, vector<tensor_t<float>> &x, vector<tensor_t<float>> &y) {
 
     float correct_count = 0;
 
-    for (case_t &c : cases) {
+    for (int i = 0; i < x.size(); ++i) {
+
+        auto xi = x[i];
+        auto yi = y[i];
 
         float expected = 0;
-        for (int i = 0; i < c.out.size.x; i++) {
-            if (c.out(i, 0, 0) == 1) {
+        for (int i = 0; i < yi.size.x; i++) {
+            if (yi(i, 0, 0) == 1) {
                 expected = i;
             }
         }
 
 
-        forward(layers, c.data);
+        forward(layers, xi);
         auto probs = layers.back()->out;
         float predicted = -1;
         float max_prob = -1;
@@ -180,16 +191,16 @@ float compute_accuracy(vector<layer_t *> &layers, vector<case_t> &cases) {
         }
     }
 
-    return correct_count / cases.size();
+    return correct_count / x.size();
 }
 
 int main() {
-    read_test_cases_csv();
-    vector<case_t> cases = read_test_cases();
+    auto x = load_csv_data("mnist_validation_features.csv", 28, 28, 1);
+    auto y = load_csv_data("mnist_validation_labels.csv", 10, 1, 1);
 
     vector<layer_t *> layers;
 
-    conv_layer_t *layer1 = new conv_layer_t(1, 5, 8, cases[0].data.size);        // 28 * 28 * 1 -> 24 * 24 * 8
+    conv_layer_t *layer1 = new conv_layer_t(1, 5, 8, x[0].size);        // 28 * 28 * 1 -> 24 * 24 * 8
     relu_layer_t *layer2 = new relu_layer_t(layer1->out.size);
     pool_layer_t *layer3 = new pool_layer_t(2, 2, layer2->out.size);                // 24 * 24 * 8 -> 12 * 12 * 8
     fc_layer_t *layer4 = new fc_layer_t(layer3->out.size, 10);                    // 4 * 4 * 16 -> 10
@@ -205,8 +216,12 @@ int main() {
 
     for (long ep = 0; ep < 100000;) {
 
-        for (case_t &t : cases) {
-            float xerr = train(layers, t.data, t.out);
+        for (int i = 0; i < x.size(); ++i) {
+
+            auto xi = x[i];
+            auto yi = y[i];
+
+            float xerr = train(layers, xi, yi);
 
             amse += xerr;
 
@@ -215,20 +230,15 @@ int main() {
 
             if (ep % 1000 == 0) {
                 cout << "case " << ep << " err=" << amse / ic << endl;
-
-                vector<case_t> last_cases(cases.begin() + 59000, cases.end());
-                cout << "accuracy:" << compute_accuracy(layers, last_cases) << endl;
+                vector<tensor_t<float>> last_x(x.begin() + 5900, x.end());
+                vector<tensor_t<float>> last_y(y.begin() + 5900, y.end());
+                cout << "accuracy:" << compute_accuracy(layers, last_x, last_y) << endl;
             }
 
-            // if ( GetAsyncKeyState( VK_F1 ) & 0x8000 )
-            // {
-            //	   printf( "err=%.4f%\n", amse / ic  );
-            //	   goto end;
-            // }
         }
-    }
-    // end:
 
+
+    }
 
 
 #pragma clang diagnostic push
