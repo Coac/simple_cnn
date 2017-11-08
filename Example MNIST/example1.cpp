@@ -177,9 +177,11 @@ float compute_mae_loss(vector<layer_t *> &layers, vector<tensor_t<float>> &x, ve
 }
 
 int main() {
+    cout << "Loading training set" << endl;
     auto train_x = load_csv_data("mnist_training_features.csv", 28, 28, 1);
     auto train_y = load_csv_data("mnist_training_labels.csv", 10, 1, 1);
 
+    cout << "Loading validation set" << endl;
     auto val_x = load_csv_data("mnist_validation_features.csv", 28, 28, 1);
     auto val_y = load_csv_data("mnist_validation_labels.csv", 10, 1, 1);
 
@@ -198,6 +200,8 @@ int main() {
     float amse = 0;
     int ic = 0;
 
+    clock_t begin = clock();
+
     for (long ep = 0; ep < 100000;) {
 
         for (int i = 0; i < train_x.size(); ++i) {
@@ -213,9 +217,16 @@ int main() {
             ic++;
 
             if (ep % 10000 == 0) {
-                cout << "case " << ep << " err=" << amse / ic << endl;
-                cout << "accuracy:" << compute_accuracy(layers, val_x, val_y) << endl;
-                cout << "mae:" << compute_mae_loss(layers, val_x, val_y) << endl;
+//                cout << "case " << ep << " err=" << amse / ic << endl;
+
+                auto val_acc = compute_accuracy(layers, val_x, val_y);
+                auto val_loss = compute_mae_loss(layers, val_x, val_y);
+//                cout << "accuracy:" << val_acc << endl;
+//                cout << "mae:" << val_loss<< endl;
+
+                clock_t end = clock();
+                double elapsed_time = double(end - begin) / CLOCKS_PER_SEC * 1000;
+                cout << "eval:" << ep << "," << ep << ",0,0," << val_loss << "," << val_acc << "," << elapsed_time << endl;
             }
         }
     }
