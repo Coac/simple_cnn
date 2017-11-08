@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <time.h>
 #include <sstream>
-#include "byteswap.h"
 #include "CNN/cnn.h"
 
 using namespace std;
@@ -157,12 +156,15 @@ float compute_accuracy(vector<layer_t *> &layers, vector<tensor_t<float>> &x, ve
 }
 
 int main() {
-    auto x = load_csv_data("mnist_validation_features.csv", 28, 28, 1);
-    auto y = load_csv_data("mnist_validation_labels.csv", 10, 1, 1);
+    auto train_x = load_csv_data("mnist_training_features.csv", 28, 28, 1);
+    auto train_y = load_csv_data("mnist_training_labels.csv", 10, 1, 1);
+
+    auto val_x = load_csv_data("mnist_validation_features.csv", 28, 28, 1);
+    auto val_y = load_csv_data("mnist_validation_labels.csv", 10, 1, 1);
 
     vector<layer_t *> layers;
 
-    conv_layer_t *layer1 = new conv_layer_t(1, 5, 8, x[0].size);        // 28 * 28 * 1 -> 24 * 24 * 8
+    conv_layer_t *layer1 = new conv_layer_t(1, 5, 8, train_x[0].size);        // 28 * 28 * 1 -> 24 * 24 * 8
     relu_layer_t *layer2 = new relu_layer_t(layer1->out.size);
     pool_layer_t *layer3 = new pool_layer_t(2, 2, layer2->out.size);                // 24 * 24 * 8 -> 12 * 12 * 8
     fc_layer_t *layer4 = new fc_layer_t(layer3->out.size, 10);                    // 4 * 4 * 16 -> 10
@@ -172,16 +174,15 @@ int main() {
     layers.push_back((layer_t *) layer3);
     layers.push_back((layer_t *) layer4);
 
-
     float amse = 0;
     int ic = 0;
 
     for (long ep = 0; ep < 100000;) {
 
-        for (int i = 0; i < x.size(); ++i) {
+        for (int i = 0; i < train_x.size(); ++i) {
 
-            auto xi = x[i];
-            auto yi = y[i];
+            auto xi = train_x[i];
+            auto yi = train_y[i];
 
             float xerr = train(layers, xi, yi);
 
@@ -192,14 +193,9 @@ int main() {
 
             if (ep % 1000 == 0) {
                 cout << "case " << ep << " err=" << amse / ic << endl;
-                vector<tensor_t<float>> last_x(x.begin() + 5900, x.end());
-                vector<tensor_t<float>> last_y(y.begin() + 5900, y.end());
-                cout << "accuracy:" << compute_accuracy(layers, last_x, last_y) << endl;
+                cout << "accuracy:" << compute_accuracy(layers, val_x, val_y) << endl;
             }
-
         }
-
-
     }
 
 
