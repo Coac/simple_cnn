@@ -46,11 +46,6 @@ float train(vector<layer_t *> &layers, tensor_t<float> &data, tensor_t<float> &e
 }
 
 
-struct case_t {
-    tensor_t<float> data;
-    tensor_t<float> out;
-};
-
 uint8_t *read_file(const char *szFile) {
     ifstream file(szFile, ios::binary | ios::ate);
     streamsize size = file.tellg();
@@ -90,7 +85,6 @@ vector<vector<float>> load_csv(const char *csv_path) {
 }
 
 
-// TODO :
 vector<tensor_t<float>>
 csv_to_tensor(vector<vector<float>> &csv_y, const int size_x, const int size_y, const int size_z) {
     vector<tensor_t<float>> tensors_y;
@@ -125,38 +119,6 @@ vector<tensor_t<float>> load_csv_data(const char *csv_path, const int size_x, co
     auto csv_x = load_csv(csv_path);
     return csv_to_tensor(csv_x, size_x, size_y, size_z);
 }
-
-vector<case_t> read_test_cases() {
-    vector<case_t> cases;
-
-    uint8_t *train_image = read_file("train-images.idx3-ubyte");
-    uint8_t *train_labels = read_file("train-labels.idx1-ubyte");
-
-    uint32_t case_count = byteswap_uint32(*(uint32_t *) (train_image + 4));
-
-    cout << case_count << endl;
-
-    for (int i = 0; i < case_count; i++) {
-        case_t c{tensor_t<float>(28, 28, 1), tensor_t<float>(10, 1, 1)};
-
-        uint8_t *img = train_image + 16 + i * (28 * 28);
-        uint8_t *label = train_labels + 8 + i;
-
-        for (int x = 0; x < 28; x++)
-            for (int y = 0; y < 28; y++)
-                c.data(x, y, 0) = img[x + y * 28] / 255.f;
-
-        for (int b = 0; b < 10; b++)
-            c.out(b, 0, 0) = *label == b ? 1.0f : 0.0f;
-
-        cases.push_back(c);
-    }
-    delete[] train_image;
-    delete[] train_labels;
-
-    return cases;
-}
-
 
 float compute_accuracy(vector<layer_t *> &layers, vector<tensor_t<float>> &x, vector<tensor_t<float>> &y) {
 
