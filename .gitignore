@@ -48,5 +48,5 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
-example1
-example2
+simple
+alexnet

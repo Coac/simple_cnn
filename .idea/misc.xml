@@ -4,7 +4,7 @@
   <component name="CidrRootsConfiguration">
     <sourceRoots>
       <file path="$PROJECT_DIR$/CNN" />
-      <file path="$PROJECT_DIR$/Example MNIST" />
+      <file path="$PROJECT_DIR$/examples" />
     </sourceRoots>
   </component>
 </project>

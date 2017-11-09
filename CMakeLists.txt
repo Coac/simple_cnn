@@ -5,5 +5,5 @@ set(CMAKE_CXX_STANDARD 11)
 
 include_directories(./)
 
-add_executable(example1 "Example MNIST/example1.cpp")
-add_executable(example2 "Example MNIST/example2.cpp")
+add_executable(simple "examples/simple.cpp")
+add_executable(alexnet "examples/alexnet.cpp")
